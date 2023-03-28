@@ -1,0 +1,73 @@
+// @<COPYRIGHT>@
+// ==================================================
+// Copyright 2017.
+// Siemens Product Lifecycle Management Software Inc.
+// All Rights Reserved.
+// ==================================================
+// @<COPYRIGHT>@
+
+/**
+ *
+ * @module tracerConsole/tracer.controller
+ */
+import app from "/tracerConsole/js/app.js";
+("use strict");
+
+app.controller("tracerController", [
+    "$scope",
+    "$timeout",
+    function (scope, $timeout) {
+        /**
+         * Log data
+         */
+        scope.table = [];
+        scope.page = "viewModelTracer";
+
+        scope.filterText = "";
+
+        var prevSelectionNode = null;
+        scope.onLogSelection = function (e) {
+            e.preventDefault();
+            var parentLogNode = e.composedPath().filter(function (p) {
+                return p.className &&
+                    p.className.includes("log-table-row flex-row-layout ng-scope")
+                    ? p
+                    : null;
+            });
+            if (parentLogNode && parentLogNode.length) {
+                if (prevSelectionNode) {
+                    prevSelectionNode.selected = false;
+                }
+                var parentLogNodeScope = angular.element(parentLogNode).scope();
+                scope.selectedRecord = parentLogNodeScope.record;
+                scope.selectedRecord.selected = true;
+                prevSelectionNode = scope.selectedRecord;
+            }
+        };
+
+        scope.$on("ext.recorded", function (evt, data) {
+            if (
+                scope.infoType === "viewModelTracer" &&
+                data.row.rowData[1].type !== "command" &&
+                data.row.rowData[1].type !== "event"
+            ) {
+                scope.table.push(data.row);
+            } else {
+                if (data.row.rowData[1].type === scope.infoType) {
+                    scope.table.push(data.row);
+                }
+            }
+        });
+
+        scope.$on("ext.clear", function (evt, data) {
+            if (data.pageName === scope.infoType) {
+                scope.table = [];
+                scope.selectedRecord = null;
+            }
+        });
+
+        scope.$on("ext.search", function (evt, data) {
+            scope.filterText = data.filterText;
+        });
+    },
+]);
